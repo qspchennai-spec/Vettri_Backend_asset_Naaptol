@@ -8,7 +8,6 @@ import com.vikkash.assetmanagementv1.repository.AdminRepository;
 import com.vikkash.assetmanagementv1.repository.EmployeeRepository;
 import com.vikkash.assetmanagementv1.repository.PermissionRepository;
 import com.vikkash.assetmanagementv1.repository.RoleRepository;
-import com.vikkash.assetmanagementv1.service.EmployeeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,6 +65,12 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${app.seed.demo-data:true}")
     private boolean seedDemoData;
 
+    @Value("${app.company.pulse-name}")
+    private String pulseName;
+
+    @Value("${app.seed.employee-password:}")
+    private String configuredEmployeePassword;
+
     public DataSeeder(AdminRepository adminRepository,
                       EmployeeRepository employeeRepository,
                       RoleRepository roleRepository,
@@ -110,7 +115,7 @@ public class DataSeeder implements CommandLineRunner {
         {"SERVICE_BILLING_MANAGE",    "Add / edit service billing records","Service Billing"},
         {"MAINTENANCE_VIEW",          "View maintenance records",       "Maintenance"},
         {"MAINTENANCE_MANAGE",        "Add / edit maintenance records", "Maintenance"},
-        {"PULSE_VIEW",                "View Haoda Pulse",               "Haoda Pulse"},
+        {"PULSE_VIEW",                "View {PULSE_NAME}",               "{PULSE_NAME}"},
         {"FILE_CENTER_VIEW",          "View File Center",               "File Center"},
         {"FILE_CENTER_MANAGE",        "Upload / manage shared files",   "File Center"},
         {"REPORTS_VIEW",              "View reports",                   "Reports"},
@@ -124,7 +129,8 @@ public class DataSeeder implements CommandLineRunner {
     private void seedPermissions() {
         for (String[] def : PERMISSION_DEFS) {
             if (!permissionRepository.existsByCode(def[0])) {
-                permissionRepository.save(new Permission(def[0], def[1], def[2]));
+                permissionRepository.save(new Permission(def[0], def[1].replace("{PULSE_NAME}", pulseName),
+                    def[2].replace("{PULSE_NAME}", pulseName)));
             }
         }
     }
@@ -290,10 +296,17 @@ public class DataSeeder implements CommandLineRunner {
             e.setLocation((String) row[5]);
             e.setRole("EMPLOYEE");
             e.setRoleRef(employeeRole);
-            e.setPassword(passwordEncoder.encode(EmployeeService.DEFAULT_PASSWORD));
+            e.setPassword(passwordEncoder.encode(initialEmployeePassword()));
             e.setMustChangePassword(true);
             employeeRepository.save(e);
         }
-        log.info("Seeded {} demo employees (password={})", demo.length, EmployeeService.DEFAULT_PASSWORD);
+        log.info("Seeded {} demo employees using the configured employee password", demo.length);
+    }
+
+    private String initialEmployeePassword() {
+        if (configuredEmployeePassword == null || configuredEmployeePassword.isBlank()) {
+            throw new IllegalStateException("APP_SEED_EMPLOYEE_PASSWORD must be set when SEED_DEMO_DATA is true");
+        }
+        return configuredEmployeePassword;
     }
 }

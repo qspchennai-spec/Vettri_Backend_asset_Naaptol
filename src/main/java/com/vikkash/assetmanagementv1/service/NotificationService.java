@@ -32,7 +32,7 @@ public class NotificationService {
     private final EmailService emailService;
     private final CopyOnWriteArrayList<SseEmitter> emitters = new CopyOnWriteArrayList<>();
 
-    @Value("${app.admin.assignment-notification-email:itsupport@haodapayments.com}")
+    @Value("${app.admin.assignment-notification-email:}")
     private String adminEmail;
 
     public NotificationService(NotificationRepository repository, EmailService emailService) {

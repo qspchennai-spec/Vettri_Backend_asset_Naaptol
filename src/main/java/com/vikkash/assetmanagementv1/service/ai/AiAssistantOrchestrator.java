@@ -6,6 +6,7 @@ import com.vikkash.assetmanagementv1.entity.AiConversationMessage;
 import com.vikkash.assetmanagementv1.repository.AiConversationMessageRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -15,6 +16,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AiAssistantOrchestrator {
+
+    @Value("${app.company.display-name}")
+    private String companyDisplayName;
     // Orchestrates one assistant turn: builds the Chat-Completions-style message
     // list, streams the model's reply via GroqChatClient, runs the tool-calling
     // loop, and gates destructive actions behind a user confirmation step.
@@ -197,7 +201,7 @@ public class AiAssistantOrchestrator {
 
     private Map<String, Object> systemMessage(boolean isAdmin, String callerId) {
         String role = isAdmin ? "Admin" : "Employee";
-        String prompt = "You are the AI Assistant built into Haoda Asset Management, a conversational, ChatGPT-like " +
+        String prompt = "You are the AI Assistant built into " + companyDisplayName + ", a conversational, ChatGPT-like " +
                 "assistant for managing IT assets, employees, and maintenance. Use the provided tools to look up real " +
                 "data and take real actions — never invent asset IDs, serial numbers, employee IDs, or counts. " +
                 "If a request is ambiguous (multiple matching assets/employees, or a required field is missing), ask a " +

@@ -28,6 +28,7 @@ import com.vikkash.assetmanagementv1.security.JwtUtil;
 import com.vikkash.assetmanagementv1.security.OtpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,8 +44,8 @@ public class EmployeeService {
 
     private static final Logger log = LoggerFactory.getLogger(EmployeeService.class);
 
-    /** Organization-wide default password for all new employees. */
-    public static final String DEFAULT_PASSWORD = "Haoda@321";
+    @Value("${app.seed.employee-password:}")
+    private String configuredEmployeePassword;
 
     private final EmployeeRepository employeeRepository;
     private final AssetRepository    assetRepository;
@@ -251,7 +252,7 @@ public class EmployeeService {
         employee.setJoiningDate(request.getJoiningDate());
         employee.setManager(request.getManager());
         employee.setRole("EMPLOYEE");
-        employee.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
+        employee.setPassword(passwordEncoder.encode(initialEmployeePassword()));
         employee.setMustChangePassword(true);  // force change on first login
         employee.setEmploymentStatus(EmploymentStatus.ACTIVE);
         employee.setLoginEnabled(true);
@@ -386,11 +387,18 @@ public class EmployeeService {
     @Transactional
     public void resetToDefaultPassword(String employeeId) {
         Employee employee = getByEmployeeId(employeeId);
-        employee.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
+        employee.setPassword(passwordEncoder.encode(initialEmployeePassword()));
         employee.setMustChangePassword(true);   // ← was incorrectly false
         employeeRepository.save(employee);
         log.info("Password reset to default for employee: {}", employeeId);
         auditLogService.record("EMPLOYEE", employeeId, "PASSWORD_RESET", "Admin reset password to default");
+    }
+
+    private String initialEmployeePassword() {
+        if (configuredEmployeePassword == null || configuredEmployeePassword.isBlank()) {
+            throw new IllegalStateException("APP_SEED_EMPLOYEE_PASSWORD must be configured before setting an employee password");
+        }
+        return configuredEmployeePassword;
     }
 
     /** Returns all assets currently assigned to this employee. */

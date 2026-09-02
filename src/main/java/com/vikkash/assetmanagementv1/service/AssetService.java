@@ -43,7 +43,7 @@ public class AssetService {
     // Fixed inbox that every "asset assigned" admin notification goes to,
     // regardless of which admin performed the assignment — same pattern as
     // app.admin.2fa-email (a shared IT Support inbox, not a personal address).
-    @Value("${app.admin.assignment-notification-email:itsupport@haodapayments.com}")
+    @Value("${app.admin.assignment-notification-email:}")
     private String assignmentNotificationEmail;
 
     public AssetService(AssetRepository assetRepository,

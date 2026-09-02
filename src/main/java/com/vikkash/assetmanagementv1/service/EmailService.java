@@ -52,8 +52,14 @@ public class EmailService {
      * behavior is preserved even if the property is omitted from a given
      * environment's properties file.
      */
-    @Value("${app.mail.cc:itsupport@haodapayments.com}")
+    @Value("${app.mail.cc:}")
     private String ccAddress;
+
+    @Value("${app.company.display-name}")
+    private String companyDisplayName;
+
+    @Value("${app.company.file-center-name}")
+    private String fileCenterName;
 
     public EmailService(RestTemplate restTemplate, ObjectMapper objectMapper) {
         this.restTemplate = restTemplate;
@@ -74,6 +80,19 @@ public class EmailService {
         cc.put("email", ccAddress);
         root.putArray("cc").add(cc);
     }
+
+      private String applyBranding(String html) {
+        String companyMark = companyDisplayName.substring(0, 1).toUpperCase();
+        return html
+            .replace("Haoda File Center", fileCenterName)
+            .replace("Haoda Asset Management", companyDisplayName)
+            .replace("Haoda Asset", companyDisplayName)
+            .replace("Haoda Payments", companyDisplayName)
+            .replace("AssetTower", companyDisplayName)
+            .replace("Haoda", companyDisplayName)
+            .replace(">H</td>", ">" + companyMark + "</td>")
+            .replace("it-support@haodapayments.com", fromAddress);
+      }
 
     /**
      * Sends a styled OTP email.
@@ -96,8 +115,8 @@ public class EmailService {
             root.putArray("to").add(recipient);
             addGlobalCc(root);
 
-            root.put("subject", heading + " — Your AssetTower verification code");
-            root.put("htmlContent", buildHtml(heading, otp, expiryMinutes));
+            root.put("subject", heading + " — Your " + companyDisplayName + " verification code");
+            root.put("htmlContent", applyBranding(buildHtml(heading, otp, expiryMinutes)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -156,7 +175,7 @@ public class EmailService {
             addGlobalCc(root);
 
             root.put("subject", "Asset Assigned To You — " + assetDetails.assetName());
-            root.put("htmlContent", buildAssetAssignmentHtml(employeeName, employeeId, assetDetails));
+            root.put("htmlContent", applyBranding(buildAssetAssignmentHtml(employeeName, employeeId, assetDetails)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -233,7 +252,7 @@ public class EmailService {
 
             root.put("subject", "Asset Assignment Confirmation — " + details.assetName()
                     + " → " + details.employeeName());
-            root.put("htmlContent", buildAssetAssignmentAdminNotificationHtml(details));
+            root.put("htmlContent", applyBranding(buildAssetAssignmentAdminNotificationHtml(details)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -405,7 +424,7 @@ public class EmailService {
             addGlobalCc(root);
 
             root.put("subject", "Temporary Assignment Expired — " + details.assetName());
-            root.put("htmlContent", buildTemporaryAssignmentExpiredHtml(details));
+            root.put("htmlContent", applyBranding(buildTemporaryAssignmentExpiredHtml(details)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -554,7 +573,7 @@ public class EmailService {
             addGlobalCc(root);
 
             root.put("subject", "Asset Return Confirmation");
-            root.put("htmlContent", buildAssetReturnHtml(employeeName, employeeId, assetDetails));
+            root.put("htmlContent", applyBranding(buildAssetReturnHtml(employeeName, employeeId, assetDetails)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -725,7 +744,7 @@ public class EmailService {
                     ? "Your Assigned IT Asset — " + nullSafe(assets.get(0).assetName())
                     : "Your Assigned IT Assets (" + assets.size() + ") — Haoda Asset";
             root.put("subject", subject);
-            root.put("htmlContent", buildBulkAssetEmailHtml(employee, assets));
+            root.put("htmlContent", applyBranding(buildBulkAssetEmailHtml(employee, assets)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -984,7 +1003,7 @@ public class EmailService {
             addGlobalCc(root);
 
             root.put("subject", subject);
-            root.put("htmlContent", buildFileSharedHtml(employeeName, introMessage, details));
+            root.put("htmlContent", applyBranding(buildFileSharedHtml(employeeName, introMessage, details)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -1173,7 +1192,7 @@ public class EmailService {
             addGlobalCc(root);
 
             root.put("subject", subject);
-            root.put("htmlContent", buildSimpleHtml(heading, bodyHtml));
+            root.put("htmlContent", applyBranding(buildSimpleHtml(heading, bodyHtml)));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

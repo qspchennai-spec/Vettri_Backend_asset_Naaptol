@@ -56,8 +56,11 @@ public class SharedFileService {
     @Value("${app.filecenter.max-upload-mb:100}")
     private long maxUploadMb;
 
-    @Value("${app.frontend.base-url:https://haodaasset.vercel.app}")
+    @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
+
+    @Value("${app.company.file-center-name}")
+    private String fileCenterName;
 
     public SharedFileService(SharedFileRepository fileRepository,
                               SharedFileVersionRepository versionRepository,
@@ -490,7 +493,7 @@ public class SharedFileService {
 
     private void notifyRecipients(SharedFile shared, List<Employee> employees, String subjectOverride, String messageOverride) {
         String subject = (subjectOverride == null || subjectOverride.isBlank())
-                ? "New File Available — Haoda File Center" : subjectOverride;
+                ? "New File Available — " + fileCenterName : subjectOverride;
         String intro = (messageOverride == null || messageOverride.isBlank())
                 ? "A new file has been shared with you by the IT Team. Please click the button below to securely access the file."
                 : messageOverride;

@@ -37,7 +37,7 @@ public class QrCodeService {
 
     private static final int SIZE = 320;
 
-    @Value("${app.frontend.base-url:https://haodaasset.vercel.app}")
+    @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
     /** Builds the PNG bytes for an asset's QR code. */
