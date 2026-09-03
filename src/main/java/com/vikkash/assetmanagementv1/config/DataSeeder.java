@@ -16,7 +16,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -39,8 +38,6 @@ import java.util.stream.Collectors;
 public class DataSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     private final AdminRepository      adminRepository;
     private final EmployeeRepository   employeeRepository;
     private final RoleRepository       roleRepository;
@@ -50,14 +47,7 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${app.admin.recovery-email:}")
     private String adminRecoveryEmail;
 
-    /**
-     * Set a real password via this property (env var APP_SEED_ADMIN_PASSWORD)
-     * before first boot in any shared/production environment. If left blank,
-     * a random password is generated and printed to the log ONCE — there is
-     * no hardcoded fallback like the old "admin123" default, precisely
-     * because that default being public in source control is a real
-     * security hole for any deployment that forgets to change it.
-     */
+    /** Set via APP_SEED_ADMIN_PASSWORD when demo seeding is explicitly enabled. */
     @Value("${app.seed.admin-password:}")
     private String configuredAdminPassword;
 
@@ -218,16 +208,13 @@ public class DataSeeder implements CommandLineRunner {
     private void seedAdmin() {
         if (adminRepository.existsByUsername("admin")) return;
 
-        String passwordToUse = configuredAdminPassword;
-        boolean generated = false;
-        if (passwordToUse == null || passwordToUse.isBlank()) {
-            passwordToUse = generateRandomPassword();
-            generated = true;
+        if (configuredAdminPassword == null || configuredAdminPassword.isBlank()) {
+            throw new IllegalStateException("APP_SEED_ADMIN_PASSWORD must be set when SEED_DEMO_DATA is true");
         }
 
         Admin admin = new Admin();
         admin.setUsername("admin");
-        admin.setPassword(passwordEncoder.encode(passwordToUse));
+        admin.setPassword(passwordEncoder.encode(configuredAdminPassword));
         admin.setName("System Administrator");
         roleRepository.findByName("SYSTEM_ADMIN").ifPresent(admin::setRoleRef);
         if (adminRecoveryEmail != null && !adminRecoveryEmail.isBlank()) {
@@ -235,23 +222,7 @@ public class DataSeeder implements CommandLineRunner {
         }
         adminRepository.save(admin);
 
-        if (generated) {
-            log.warn("=================================================================");
-            log.warn(" Seeded default admin account (username=admin)");
-            log.warn(" GENERATED PASSWORD (shown only this once): {}", passwordToUse);
-            log.warn(" Set app.seed.admin-password / APP_SEED_ADMIN_PASSWORD instead,");
-            log.warn(" or change this password immediately after first login.");
-            log.warn("=================================================================");
-        } else {
-            log.info("Seeded default admin account (username=admin) using configured app.seed.admin-password");
-        }
-    }
-
-    private String generateRandomPassword() {
-        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 16; i++) sb.append(chars.charAt(RANDOM.nextInt(chars.length())));
-        return sb.toString();
+        log.info("Seeded default admin account (username=admin) using configured APP_SEED_ADMIN_PASSWORD");
     }
 
     /**
